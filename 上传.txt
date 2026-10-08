@@ -1,0 +1,23 @@
+git init
+git add .
+git commit -m "init gallery"
+
+git branch -M main
+git remote add origin https://github.com/zzuchatgpt223-sudo/Gallery-General.git
+git push -u origin main
+
+
+
+打开浏览器进入你的新仓库页面：[https://github.com/zzuchatgpt223-sudo/Gallery-General](https://github.com/zzuchatgpt223-sudo/Gallery-General)
+
+点击上方 Settings -> 左侧 Pages。
+
+在 Source 选择 Deploy from a branch，Branch 选择 main 和 / (root)，点击 Save 保存。
+
+
+后续依次执行以下 3 条命令即可自动同步更新
+
+git add .
+git commit -m "更新图库内容"
+git push
+
