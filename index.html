@@ -10,8 +10,6 @@
     header{background:#1a1a1a;padding:16px 20px;position:sticky;top:0;z-index:100;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between}
     .header-left{display:flex;align-items:center;gap:16px}
     header h1{font-size:1.3rem;font-weight:600}
-    .nsfw-link{background:rgba(231,76,60,0.15);border:1px solid #e74c3c;color:#ff6b6b;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600;text-decoration:none;transition:background .2s}
-    .nsfw-link:hover{background:rgba(231,76,60,0.3)}
     .back-btn{display:none;background:#333;border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.9rem}
     .back-btn:hover{background:#444}
     
@@ -69,7 +67,6 @@
     .disclaimer-box{background:#1a1a1a;border:1px solid #333;border-radius:16px;max-width:520px;width:100%;padding:32px 28px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)}
     .disclaimer-box h2{font-size:1.4rem;margin-bottom:20px;color:#ff6b6b}
     .disclaimer-box p{font-size:.95rem;color:#ccc;margin-bottom:14px;line-height:1.7;text-align:left}
-    .disclaimer-box .warning{color:#ff9f43;font-weight:600;margin:18px 0;text-align:center}
     .disclaimer-btns{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;justify-content:center}
     .disclaimer-btns button{border:none;padding:12px 28px;border-radius:8px;font-size:1rem;cursor:pointer;font-weight:600;transition:opacity .2s}
     .disclaimer-btns button:hover{opacity:.85}
@@ -80,27 +77,15 @@
 </head>
 <body>
 
+<!-- 入口通用免责声明 -->
 <div class="disclaimer" id="disclaimer">
   <div class="disclaimer-box">
     <h2>⚠️ 抱枕图库访问声明 / 18+ Warning</h2>
     <p>欢迎来到抱枕定制图库。本站部分内容包含动漫周边二创及艺术插画，选图仅供定制参考。</p>
-    <p class="warning">若您即将访问 18+ 专区，请确保您已年满 18 周岁。未成年人请勿浏览。</p>
-    <p style="font-size:.85rem;color:#888;text-align:center">点击进入即代表您已确认自己符合年龄要求，并自愿遵守当地法律法规。</p>
+    <p style="font-size:.85rem;color:#888;text-align:center">点击进入即代表您已确认自愿遵守相关法律法规。</p>
     <div class="disclaimer-btns">
-      <button class="btn-leave" onclick="window.location.href='about:blank'">我未满18岁 / 离开</button>
-      <button class="btn-enter" onclick="enterSite()">我已年满18岁，同意进入</button>
-    </div>
-  </div>
-</div>
-
-<div class="disclaimer hidden" id="nsfw-disclaimer">
-  <div class="disclaimer-box">
-    <h2>⚠️ 18+ 枕套专区警告</h2>
-    <p>您即将访问的<strong>18+ 枕套图库</strong>包含成人限制级内容，仅限成年人浏览。</p>
-    <p class="warning">未满 18 周岁、心理承受能力较差者严禁进入！</p>
-    <div class="disclaimer-btns">
-      <button class="btn-leave" onclick="closeNsfwDisclaimer()">返回普通图库</button>
-      <button class="btn-enter" onclick="confirmNsfwEnter()">我已满18岁，确认进入</button>
+      <button class="btn-leave" onclick="window.location.href='about:blank'">离开</button>
+      <button class="btn-enter" onclick="enterSite()">同意进入</button>
     </div>
   </div>
 </div>
@@ -108,7 +93,6 @@
 <div id="main-content">
   <header>
     <div class="header-left">
-      <a href="#" class="nsfw-link" onclick="openNsfwDisclaimer(event)">🔥 18+ 枕套专区 (未成年勿入)</a>
       <h1 id="page-title">抱枕定制图库</h1>
     </div>
     <button class="back-btn" id="back-btn" onclick="goBack()">← 返回</button>
@@ -225,7 +209,6 @@ function handleGlobalSearch(keyword) {
   
   const trimmed = keyword.trim().toLowerCase();
   if (trimmed === '') {
-    // 没输入时恢复当前层级原本的视图
     renderGrid(currentLevelData);
     if (navigationStack.length === 0) tipText.style.display = 'block';
     return;
@@ -237,7 +220,6 @@ function handleGlobalSearch(keyword) {
   grid.style.display = 'grid';
   grid.innerHTML = '';
 
-  // 递归收集所有层级中名字匹配的分类
   let matchedResults = [];
   function searchRecursive(node) {
     if (!node || !node.subcategories) return;
@@ -245,12 +227,10 @@ function handleGlobalSearch(keyword) {
       if (name.toLowerCase().includes(trimmed)) {
         matchedResults.push({ name, sub });
       }
-      // 继续往深处搜二级、三级……
       searchRecursive(sub);
     }
   }
 
-  // 从根目录 galleryData 开始全局搜索
   if (typeof galleryData !== 'undefined') {
     searchRecursive({ subcategories: galleryData });
   }
@@ -260,7 +240,6 @@ function handleGlobalSearch(keyword) {
     return;
   }
 
-  // 渲染搜索出来的所有匹配项（支持一级、二级、多级混合）
   for (const item of matchedResults) {
     appendCard(grid, item.name, item.sub);
   }
@@ -312,18 +291,6 @@ function enterSite() {
     return;
   }
   renderCurrentLevel({ subcategories: galleryData }, "抱枕定制图库");
-}
-
-function openNsfwDisclaimer(e) {
-  e.preventDefault();
-  document.getElementById('nsfw-disclaimer').classList.remove('hidden');
-}
-function closeNsfwDisclaimer() {
-  document.getElementById('nsfw-disclaimer').classList.add('hidden');
-}
-function confirmNsfwEnter() {
-  window.location.href = 'https://zzuchatgpt223-sudo.github.io/gallery/';
-  document.getElementById('nsfw-disclaimer').classList.add('hidden');
 }
 </script>
 </body>
