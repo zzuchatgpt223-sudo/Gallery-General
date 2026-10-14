@@ -14,7 +14,23 @@
     .nsfw-link:hover{background:rgba(231,76,60,0.3)}
     .back-btn{display:none;background:#333;border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.9rem}
     .back-btn:hover{background:#444}
+    
     .container{max-width:1400px;margin:0 auto;padding:24px 16px}
+    
+    .search-box{margin-bottom:20px}
+    .search-box input{
+      width:100%;
+      padding:12px 16px;
+      background:#1a1a1a;
+      border:1px solid #333;
+      border-radius:8px;
+      color:#fff;
+      font-size:1rem;
+      outline:none;
+      transition:border-color .2s;
+    }
+    .search-box input:focus{border-color:#555}
+
     .category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
     .category-card{background:#1a1a1a;border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;border:1px solid #2a2a2a}
     .category-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
@@ -47,7 +63,7 @@
     .lightbox-prev{left:20px}.lightbox-next{right:20px}
     .lightbox-nav:hover{background:rgba(255,255,255,.2)}
     .lightbox-counter{position:absolute;bottom:24px;color:#aaa;font-size:.9rem}
-    .tip{text-align:center;color:#888;margin:40px 0 20px;font-size:.95rem}
+    .tip{text-align:center;color:#888;margin:0 0 20px;font-size:.95rem}
     .disclaimer{position:fixed;inset:0;background:#0a0a0a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
     .disclaimer.hidden{display:none}
     .disclaimer-box{background:#1a1a1a;border:1px solid #333;border-radius:16px;max-width:520px;width:100%;padding:32px 28px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -64,7 +80,6 @@
 </head>
 <body>
 
-<!-- 入口通用免责声明（默认拦截） -->
 <div class="disclaimer" id="disclaimer">
   <div class="disclaimer-box">
     <h2>⚠️ 抱枕图库访问声明 / 18+ Warning</h2>
@@ -78,7 +93,6 @@
   </div>
 </div>
 
-<!-- 18+ 专区专用拦截弹窗（点击左上角按钮触发） -->
 <div class="disclaimer hidden" id="nsfw-disclaimer">
   <div class="disclaimer-box">
     <h2>⚠️ 18+ 枕套专区警告</h2>
@@ -94,13 +108,15 @@
 <div id="main-content">
   <header>
     <div class="header-left">
-      <!-- 左上角加的 18+ 枕套网站入口 -->
       <a href="#" class="nsfw-link" onclick="openNsfwDisclaimer(event)">🔥 18+ 枕套专区 (未成年勿入)</a>
       <h1 id="page-title">抱枕定制图库</h1>
     </div>
     <button class="back-btn" id="back-btn" onclick="goBack()">← 返回</button>
   </header>
   <div class="container">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="🔍 输入关键词（支持一级、二级分类）..." oninput="handleGlobalSearch(this.value)">
+    </div>
     <p class="tip" id="tip-text">选好图后，发送编号给客服即可定制（双面可挑选不同图面组合）</p>
     <div class="category-grid" id="category-grid"></div>
     <div class="gallery-grid" id="gallery-grid"></div>
@@ -118,6 +134,7 @@
 <script src="data.js"></script>
 <script>
 let currentImages=[],currentIndex=0,navigationStack=[];
+let currentLevelData = null; 
 
 function getCover(item) {
   if (item.cover) return item.cover;
@@ -136,13 +153,11 @@ function getCount(item) {
 }
 
 function renderCurrentLevel(data, title="抱枕定制图库") {
+  currentLevelData = data; 
   document.getElementById('page-title').textContent = title;
-  const grid = document.getElementById('category-grid');
-  const gGrid = document.getElementById('gallery-grid');
-  grid.innerHTML = '';
-  gGrid.innerHTML = '';
-  gGrid.classList.remove('active');
-  grid.style.display = 'grid';
+  document.getElementById('search-input').value = ''; 
+  
+  renderGrid(data);
 
   if (navigationStack.length > 0) {
     document.getElementById('back-btn').style.display = 'block';
@@ -151,29 +166,19 @@ function renderCurrentLevel(data, title="抱枕定制图库") {
     document.getElementById('back-btn').style.display = 'none';
     document.getElementById('tip-text').style.display = 'block';
   }
+}
+
+function renderGrid(data) {
+  const grid = document.getElementById('category-grid');
+  const gGrid = document.getElementById('gallery-grid');
+  grid.innerHTML = '';
+  gGrid.innerHTML = '';
+  gGrid.classList.remove('active');
+  grid.style.display = 'grid';
 
   if (data.subcategories) {
     for (const [name, sub] of Object.entries(data.subcategories)) {
-      const cover = getCover(sub);
-      const count = getCount(sub);
-      const isAlbum = !!sub.images;
-
-      const card = document.createElement('div');
-      card.className = 'category-card';
-      card.onclick = () => {
-        navigationStack.push({ data, title });
-        renderCurrentLevel(sub, name);
-      };
-      card.innerHTML = `
-        <div class="cover-wrap">
-          <img src="${cover}" alt="${name}" loading="lazy"
-               onerror="this.parentElement.style.background='#333';this.style.display='none'">
-        </div>
-        <div class="category-info">
-          <h3>${name}</h3>
-          <span>${count} ${isAlbum ? '张图片' : '项内容'}</span>
-        </div>`;
-      grid.appendChild(card);
+      appendCard(grid, name, sub);
     }
   } else if (data.images) {
     grid.style.display = 'none';
@@ -186,6 +191,78 @@ function renderCurrentLevel(data, title="抱枕定制图库") {
       item.innerHTML = `<img src="${src}" alt="" loading="lazy"><span class="num">${i+1}</span>`;
       gGrid.appendChild(item);
     });
+  }
+}
+
+function appendCard(container, name, sub) {
+  const cover = getCover(sub);
+  const count = getCount(sub);
+  const isAlbum = !!sub.images;
+
+  const card = document.createElement('div');
+  card.className = 'category-card';
+  card.onclick = () => {
+    navigationStack.push({ data: currentLevelData, title: document.getElementById('page-title').textContent });
+    renderCurrentLevel(sub, name);
+  };
+  card.innerHTML = `
+    <div class="cover-wrap">
+      <img src="${cover}" alt="${name}" loading="lazy"
+           onerror="this.parentElement.style.background='#333';this.style.display='none'">
+    </div>
+    <div class="category-info">
+      <h3>${name}</h3>
+      <span>${count} ${isAlbum ? '张图片' : '项内容'}</span>
+    </div>`;
+  container.appendChild(card);
+}
+
+// 递归全局/全库深度搜索函数
+function handleGlobalSearch(keyword) {
+  const grid = document.getElementById('category-grid');
+  const gGrid = document.getElementById('gallery-grid');
+  const tipText = document.getElementById('tip-text');
+  
+  const trimmed = keyword.trim().toLowerCase();
+  if (trimmed === '') {
+    // 没输入时恢复当前层级原本的视图
+    renderGrid(currentLevelData);
+    if (navigationStack.length === 0) tipText.style.display = 'block';
+    return;
+  }
+
+  tipText.style.display = 'none';
+  gGrid.innerHTML = '';
+  gGrid.classList.remove('active');
+  grid.style.display = 'grid';
+  grid.innerHTML = '';
+
+  // 递归收集所有层级中名字匹配的分类
+  let matchedResults = [];
+  function searchRecursive(node) {
+    if (!node || !node.subcategories) return;
+    for (const [name, sub] of Object.entries(node.subcategories)) {
+      if (name.toLowerCase().includes(trimmed)) {
+        matchedResults.push({ name, sub });
+      }
+      // 继续往深处搜二级、三级……
+      searchRecursive(sub);
+    }
+  }
+
+  // 从根目录 galleryData 开始全局搜索
+  if (typeof galleryData !== 'undefined') {
+    searchRecursive({ subcategories: galleryData });
+  }
+
+  if (matchedResults.length === 0) {
+    grid.innerHTML = '<p style="color:#888;text-align:center;grid-column:1/-1;padding:30px 0">未找到包含该名称的分类</p>';
+    return;
+  }
+
+  // 渲染搜索出来的所有匹配项（支持一级、二级、多级混合）
+  for (const item of matchedResults) {
+    appendCard(grid, item.name, item.sub);
   }
 }
 
@@ -237,7 +314,6 @@ function enterSite() {
   renderCurrentLevel({ subcategories: galleryData }, "抱枕定制图库");
 }
 
-// 18+ 专区拦截弹窗控制
 function openNsfwDisclaimer(e) {
   e.preventDefault();
   document.getElementById('nsfw-disclaimer').classList.remove('hidden');
